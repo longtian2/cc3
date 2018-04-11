@@ -24,13 +24,20 @@ Mysql数据库区别于其他数据库的最重要一个特点是插件式的表
 
 ![](https://github.com/longtian2/cc3/blob/master/images/innodb-arch.png)
 
-Master Thread
+**Master Thread**
+
  Master Thread 是一个非常核心的后台线程，主要负责将缓冲池中的数据异步刷新到磁盘，保证数据的一致性，包括脏也的刷新、合并插入缓冲、Undo 页的回收等。
-IO Thread
+
+**IO Thread**
+
   IO Thread 的主要工作是负责这些 IO 请求的回调处理，细分成Write 、 Read 、 Insert Buffer 和 Log IO Thread。
-Purge Thread
+
+**Purge Thread**
+
   Purge Thread 是在事物提交后，其所使用的Undo Log 可能不再需要，则由该线程来回收已经使用并分配的Undo 页。
-Page Cleaner Thread
+
+**Page Cleaner Thread**
+
   Page Cleaner Thread 是在Innodb 1.2x 版本中引入。其作用是将之前版本中 Master Thread 脏页刷新回磁盘交由该线程处理，其目的是为了减轻Master Thread 的工作压力及用户查询线程的阻塞，提高Innodb 存储引擎的性能。
 
 ## Innodb 存储引擎工作机制 ##
