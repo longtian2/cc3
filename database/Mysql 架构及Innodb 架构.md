@@ -22,7 +22,7 @@ Mysql数据库区别于其他数据库的最重要一个特点是插件式的表
 
 ## Innodb 存储引擎架构 ##
 
-![](https://github.com/longtian2/cc3/blob/master/images/innodb-arch.png)
+![](https://github.com/longtian2/cc3/blob/master/images/Innodb-arch.png)
 
 **Master Thread**
 
@@ -42,7 +42,7 @@ Mysql数据库区别于其他数据库的最重要一个特点是插件式的表
 
 ## Innodb 存储引擎工作机制 ##
 
-![](https://github.com/longtian2/cc3/blob/master/images/innodb-work.png)
+![](https://github.com/longtian2/cc3/blob/master/images/Innodb-work.png)
 
 **缓冲池**
 
