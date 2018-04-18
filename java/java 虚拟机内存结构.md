@@ -61,6 +61,7 @@ Java虚拟机规范对这个区域的限制非常宽松，除了和Java堆一样
 以下内容引用自--纯洁的微笑的《JVM内存结构》
 
 我们通过一张图来总结一下
+
 ![](https://github.com/longtian2/cc3/blob/master/images/jvm-arch-model.png)
 
 为了能够更清楚java虚拟机运行时数据的内存分布，我们通过实例来讲解
