@@ -43,7 +43,7 @@
 
 **抽象工厂模式**：有6个类组成，抽象的产品类A；具体实现的产品类A；抽象的产品类B；具体实现的产品类B；抽象的工厂类，包含抽象产品类A的创建方法，和抽象产品类B的创建方法；具体实现的工厂类，由具体的工厂实现类提供方法创建不同的产品。
 
-![](https://github.com/longtian2/cc3/blob/master/images/java%20design%20pattern/abstract factory.png)
+![](https://github.com/longtian2/cc3/blob/master/images/java%20design%20pattern/abstract%20factory.png)
 
 **建造者模式**：由4个类组成，具体的产品类；抽象的建造者类；具体实现的建造者类；负责监督产品的组装的具体的监理类，监理类包含被抽象的建造者。
 
@@ -78,7 +78,7 @@
 
 **门面模式**：由2个类组成，抽象的门面类；具体实现门面类。
 
-![](https://github.com/longtian2/cc3/blob/master/imagesjava%20design%20pattern/facade.png)
+![](https://github.com/longtian2/cc3/blob/master/images/java%20design%20pattern/facade.png)
 
 **享元模式**：由3个类组成，抽象的轻量化类；具体实现的可以分享的类；轻量化工厂类，包含一个名称与抽象的轻量化类的映射关系集合。
 
