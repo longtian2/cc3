@@ -114,11 +114,11 @@ Spring的IoC容器支持两种配置文件格式： Properties文件格式和XML
 
 1、BeanDefinitionDocumentReader.registerBeanDefinitions()方法接收 Document，将Document 的根元素 传递给BeanDefinitionDocumentReader.doRegisterBeanDefinitions()方法，该方法完成从根元素的递归注册。
 
-![](https://github.com/longtian2/cc3/blob/master/images/spring/spring-ioc-doc.png)
+![](https://github.com/longtian2/cc3/blob/master/images/spring/spring-ioc-register-doc.png)
 
 2、BeanDefinitionDocumentReader.doRegisterBeanDefinitions()方法中继续调用BeanDefinitionDocumentReader.parseBeanDefinitions()方法，我们可以清晰看到循环注册根元素的子元素。
 
-![](https://github.com/longtian2/cc3/blob/master/images/spring/spring-ioc-ele.png)
+![](https://github.com/longtian2/cc3/blob/master/images/spring/spring-ioc-register-ele.png)
 
 ![](https://github.com/longtian2/cc3/blob/master/images/spring/spring-ioc-parse.png)
 
