@@ -1,3 +1,4 @@
+# Spring IOC 工作机制 #
 
 ## 名词解释 ##
 
@@ -63,7 +64,7 @@ BeanFactory 是基础类型的IOC容器，提供完整的IOC服务支持。如�
 
 ApplicationContext 在BeanFactory 的基础上构建，是相对比较高级的容器实现，除了拥有BeanFactory 的所有支持，ApplicationContext 还提供了其他高级特性，比如事件发布、国际化信息支持等。ApplicationContext 所管理的对象，在该类型容器启动之后，**默认全部初始化并绑定完成**。所以，相对于BeanFactory来说，ApplicationContext 要去更多的系统资源，同时，因为在启动时就完成所有对象的初始化，容器启动时间较BeanFactory会长一下。在那些系统资源充足，并且要求更多功能的场景中，ApplicationContext 类型的容器是比较合适的选择。
 
-![](https://github.com/longtian2/cc3/blob/master/images/spring-ioc.png)
+![](https://github.com/longtian2/cc3/blob/master/images/spring/spring-ioc.png)
 
 BeanFactory只是一个接口，我们最终需要一个该接口的实现来进行实际的Bean的管理，DefaultListableBeanFactory就是这么一个比较通用的BeanFactory实现类。 DefaultListableBeanFactory除了间接地实现了BeanFactory接口，还实现了BeanDefinitionRegistry接口，该接口才是在BeanFactory的实现中担当Bean注册管理的角色。基本上，BeanFactory接口只定义如何访问容器内管理的Bean的方法，各个BeanFactory的具体实现类负责具体Bean的注册以及管理工作。BeanDefinitionRegistry接口定义抽象了Bean的注册逻辑。通常情况下，具体的BeanFactory实现类会实现这个接口来管理Bean的注册。
 
@@ -91,13 +92,152 @@ Spring的IoC容器支持两种配置文件格式： Properties文件格式和XML
 		//return new XmlBeanFactory(new ClassPathResource("../news-config.xml"));
 	}
 
-Resource：定位xml文件
+## Spring IOC 实现 ##
 
-XmlBeanDefinitionReader：读取xml文件内容，转换成BeanDefinition
+**Resource**：定位xml文件。这个简单，不是本文的重点。
 
-BeanDefinitionRegistry：并注册BeanDefinition
+**XmlBeanDefinitionReader**：读取xml文件内容，转换成Document。
 
-BeanFactory：完成依赖注入
+1、重点看一下XmlBeanDefinitionReader.loadBeanDefinitions()方法的实现，XmlBeanDefinitionReader.loadBeanDefinitions()方法主要完成了xml文件的加载，并将当期加载的xml文件放入线程变量中（目的是不重复加载，这个应该容易理解吧）。
+
+![](https://github.com/longtian2/cc3/blob/master/images/spring/spring-ioc-loadXml.png)
+
+2、XmlBeanDefinitionReader.doLoadBeanDefinitions()方法负责将XmlBeanDefinitionReader.loadBeanDefinitions()方法加载xml文件得到的字节流转换成Document。
+
+![](https://github.com/longtian2/cc3/blob/master/images/spring/spring-ioc-doload.png)
+
+3、XmlBeanDefinitionReader.registerBeanDefinitions（）方法继续将得到到Document传递给BeanDefinitionDocumentReader。
+
+![](https://github.com/longtian2/cc3/blob/master/images/spring/spring-ioc-register.png)
+
+**BeanDefinitionDocumentReader**：负责将Document中的Element转换成BeanDefinition，发起BeanDefinitionRegistry.registerBeanDefinition（）方法真正注册。
+
+1、BeanDefinitionDocumentReader.registerBeanDefinitions()方法接收 Document，将Document 的根元素 传递给BeanDefinitionDocumentReader.doRegisterBeanDefinitions()方法，该方法完成从根元素的递归注册。
+
+![](https://github.com/longtian2/cc3/blob/master/images/spring/spring-ioc-doc.png)
+
+2、BeanDefinitionDocumentReader.doRegisterBeanDefinitions()方法中继续调用BeanDefinitionDocumentReader.parseBeanDefinitions()方法，我们可以清晰看到循环注册根元素的子元素。
+
+![](https://github.com/longtian2/cc3/blob/master/images/spring/spring-ioc-ele.png)
+
+![](https://github.com/longtian2/cc3/blob/master/images/spring/spring-ioc-parse.png)
+
+![](https://github.com/longtian2/cc3/blob/master/images/spring/spring-ioc-parse2.png)
+
+3、BeanDefinitionDocumentReader.processBeanDefinition()方法发起了“真正的”注册动作，BeanDefinitionParserDelegate.decorateBeanDefinitionIfRequired() 方法将Document中的Element转换成BeanDefinition，然后调用BeanDefinitionRegistry.registerBeanDefinition()方法完成注册。
+
+![](https://github.com/longtian2/cc3/blob/master/images/spring/spring-ioc-register-bean.png)
+
+![](https://github.com/longtian2/cc3/blob/master/images/spring/spring-ioc-register-bean2.png)
+
+
+**BeanDefinitionRegistry**：注册BeanDefinition
+
+	@Override
+	public void registerBeanDefinition(String beanName, BeanDefinition beanDefinition)
+			throws BeanDefinitionStoreException {
+
+		Assert.hasText(beanName, "Bean name must not be empty");
+		Assert.notNull(beanDefinition, "BeanDefinition must not be null");
+
+		if (beanDefinition instanceof AbstractBeanDefinition) {
+			try {
+				((AbstractBeanDefinition) beanDefinition).validate();
+			}
+			catch (BeanDefinitionValidationException ex) {
+				throw new BeanDefinitionStoreException(beanDefinition.getResourceDescription(), beanName,
+						"Validation of bean definition failed", ex);
+			}
+		}
+
+		BeanDefinition oldBeanDefinition;
+
+		oldBeanDefinition = this.beanDefinitionMap.get(beanName);
+		if (oldBeanDefinition != null) {
+			if (!isAllowBeanDefinitionOverriding()) {
+				throw new BeanDefinitionStoreException(beanDefinition.getResourceDescription(), beanName,
+						"Cannot register bean definition [" + beanDefinition + "] for bean '" + beanName +
+						"': There is already [" + oldBeanDefinition + "] bound.");
+			}
+			else if (oldBeanDefinition.getRole() < beanDefinition.getRole()) {
+				// e.g. was ROLE_APPLICATION, now overriding with ROLE_SUPPORT or ROLE_INFRASTRUCTURE
+				if (this.logger.isWarnEnabled()) {
+					this.logger.warn("Overriding user-defined bean definition for bean '" + beanName +
+							"' with a framework-generated bean definition: replacing [" +
+							oldBeanDefinition + "] with [" + beanDefinition + "]");
+				}
+			}
+			else if (!beanDefinition.equals(oldBeanDefinition)) {
+				if (this.logger.isInfoEnabled()) {
+					this.logger.info("Overriding bean definition for bean '" + beanName +
+							"' with a different definition: replacing [" + oldBeanDefinition +
+							"] with [" + beanDefinition + "]");
+				}
+			}
+			else {
+				if (this.logger.isDebugEnabled()) {
+					this.logger.debug("Overriding bean definition for bean '" + beanName +
+							"' with an equivalent definition: replacing [" + oldBeanDefinition +
+							"] with [" + beanDefinition + "]");
+				}
+			}
+			this.beanDefinitionMap.put(beanName, beanDefinition);
+		}
+		else {
+			if (hasBeanCreationStarted()) {
+				// Cannot modify startup-time collection elements anymore (for stable iteration)
+				synchronized (this.beanDefinitionMap) {
+					this.beanDefinitionMap.put(beanName, beanDefinition);
+					List<String> updatedDefinitions = new ArrayList<String>(this.beanDefinitionNames.size() + 1);
+					updatedDefinitions.addAll(this.beanDefinitionNames);
+					updatedDefinitions.add(beanName);
+					this.beanDefinitionNames = updatedDefinitions;
+					if (this.manualSingletonNames.contains(beanName)) {
+						Set<String> updatedSingletons = new LinkedHashSet<String>(this.manualSingletonNames);
+						updatedSingletons.remove(beanName);
+						this.manualSingletonNames = updatedSingletons;
+					}
+				}
+			}
+			else {
+				// Still in startup registration phase
+				this.beanDefinitionMap.put(beanName, beanDefinition);
+				this.beanDefinitionNames.add(beanName);
+				this.manualSingletonNames.remove(beanName);
+			}
+			this.frozenBeanDefinitionNames = null;
+		}
+
+		if (oldBeanDefinition != null || containsSingleton(beanName)) {
+			resetBeanDefinition(beanName);
+		}
+	}
+
+**BeanFactory**：通过反射完成依赖注入，注入的入口是BeanFactory的getBean()方法。我们以 DefaultListableBeanFactory.getBean()方法举例，这里只简单描述一下调用链（因为涉及的代码太多），感兴趣的可以下载源码阅读。
+
+DefaultListableBeanFactory.getBean() --> 
+
+DefaultListableBeanFactory.resolveNamedBean() --> 
+
+AbstractBeanFactory.getBean() --> 
+
+AbstractBeanFactory.doGetBean() --> 
+
+AbstractAutowireCapableBeanFactory.createBean() -->
+
+AbstractAutowireCapableBeanFactory.doCreateBean() --> 
+
+AbstractAutowireCapableBeanFactory.createBeanInstance() --> 
+
+AbstractAutowireCapableBeanFactory.instantiateBean() --> 
+
+SimpleInstantiationStrategy.instantiate() -->
+
+BeanUtils.instantiateClass()
+
+![](https://github.com/longtian2/cc3/blob/master/images/spring/spring-ioc-init.png)
+
+InstantiationStrategy接口有两个实现，SimpleInstantiationStrategy和CglibSubclassingInstantiationStrategy，前者是采用jdk反射的实例化，后者是采用CGLIB的实例化。通过SimpleInstantiationStrategy.instantiate() 的入参我们发现，前文中注册的BeanDefinition 在此刻用例实例化Bean。
 
 参考文献：
 
