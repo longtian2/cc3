@@ -56,16 +56,16 @@
 
 类加载有三种方式：
 
-1、命令行启动应用时候由JVM初始化加载
+**1、命令行启动应用时候由JVM初始化加载**
 
-2、通过Class.forName()方法动态加载
+**2、通过Class.forName()方法动态加载**
 
-3、通过ClassLoader.loadClass()方法动态加载
+**3、通过ClassLoader.loadClass()方法动态加载**
 
 
 **Class.forName()和ClassLoader.loadClass()区别**
 
-Class.forName()：将类的.class文件加载到jvm中之外，还会对类进行解释，执行类中的static块；
+Class.forName()：除了将类的.class文件加载到jvm中之外，还会对类进行解释，执行类中的static块；
 
 ClassLoader.loadClass()：只干一件事情，就是将.class文件加载到jvm中，不会执行static中的内容,只有在newInstance才会去执行static块。
 
@@ -85,12 +85,82 @@ Class.forName(name,initialize,loader)带参函数也可控制是否加载static�
 
 4、若ExtClassLoader也加载失败，则会使用 AppClassLoader来加载，如果 AppClassLoader也加载失败，则会报出异常 ClassNotFoundException。
 
+双亲委派模型意义：
+
+系统类防止内存中出现多份同样的字节码
+
+保证Java程序安全稳定运行
 
 **自定义类加载器**
 
 通常情况下，我们都是直接使用系统类加载器。但是，有的时候，我们也需要自定义类加载器。比如应用是通过网络来传输 Java类的字节码，为保证安全性，这些字节码经过了加密处理，这时系统类加载器就无法对其进行加载，这样则需要自定义类加载器来实现。自定义类加载器一般都是继承自 ClassLoader类，从上面对 loadClass方法来分析来看，我们只需要重写 findClass 方法即可。下面我们通过一个示例来演示自定义类加载器的流程：
 
-
+	public class MyClassLoader extends ClassLoader {
+	    private String root;
+	
+	    public static void main(String[] args) {
+	        MyClassLoader classLoader = new MyClassLoader();
+	        classLoader.setRoot("E:\\temp");
+	        Class<?> testClass = null;
+	        try {
+	            testClass = classLoader.loadClass("com.neo.classloader.Test2");
+	            Object object = testClass.newInstance();
+	            System.out.println(object.getClass().getClassLoader());
+	        } catch (ClassNotFoundException e) {
+	            e.printStackTrace();
+	        } catch (InstantiationException e) {
+	            e.printStackTrace();
+	        } catch (IllegalAccessException e) {
+	            e.printStackTrace();
+	        }
+	    }
+	
+	    protected Class<?> findClass(String name) throws ClassNotFoundException {
+	
+	        byte[] classData = loadClassData(name);
+	
+	        if (classData == null) {
+	            throw new ClassNotFoundException();
+	        } else {
+	            return defineClass(name, classData, 0, classData.length);
+	        }
+	
+	    }
+	
+	    private byte[] loadClassData(String className) {
+	        String fileName = root + File.separatorChar + className.replace('.', File.separatorChar) + ".class";
+	
+	        try {
+	            InputStream ins = new FileInputStream(fileName);
+	            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+	            int bufferSize = 1024;
+	            byte[] buffer = new byte[bufferSize];
+	            int length = 0;
+	
+	            while ((length = ins.read(buffer)) != -1) {
+	                baos.write(buffer, 0, length);
+	            }
+	
+	            return baos.toByteArray();
+	        } catch (IOException e) {
+	            e.printStackTrace();
+	
+	        }
+	
+	        return null;
+	
+	    }
+	
+	    public String getRoot() {
+	        return root;
+	    }
+	
+	    public void setRoot(String root) {
+	        this.root = root;
+	
+	    }
+	
+	}
 
 自定义类加载器的核心在于对字节码文件的获取，如果是加密的字节码则需要在该类中对文件进行解密。由于这里只是演示，我并未对class文件进行加密，因此没有解密的过程。这里有几点需要注意：
 
@@ -109,8 +179,13 @@ OSGI 是当前业界“事实上”的 java 模块化标准，而 OSGI 实现模
 
 2、为了让bundle能互相协作，可以基于依赖关系，从一个bundle类加载器委托到另一个bundle类加载器
 
+![](https://github.com/longtian2/cc3/blob/master/images/osgi-demo.png)
+
 例如，bundleA、B都依赖于bundleC，当他们访问bundleC中的类时，就会委托给bundleC的类加载器，由它来查找类；如果它发现还要依赖bundleE中的类，就会再委托给bundleE的类加载器。
 
+![](https://github.com/longtian2/cc3/blob/master/images/osgi-class-loader.png)
+
+![](https://github.com/longtian2/cc3/blob/master/images/osgi-class-loader-2.png)
 
 Step 1: 检查是否java.*，或者在bootdelegation中定义
 当bundle类加载器需要加载一个类时，首先检查包名是否以java.*开头，或者是否在一个特定的配置文件（org.osgi.framework.bootdelegation）中定义。如果是，则bundle类加载器立即委托给父类加载器（通常是Application类加载器）。
@@ -118,6 +193,7 @@ Step 1: 检查是否java.*，或者在bootdelegation中定义
 这么做有两个原因：
 
 唯一能够定义java.*包的类加载器是bootstrap类加载器，这个规则是JVM要求的。如果OSGI bundle类加载器试图加载这种类，则会抛Security Exception。
+
 一些JVM错误地假设父加载器委托永远会发生，内部VM类就能够通过任何类加载器找到特定的其他内部类。所以OSGi提供了org.osgi.framework.bootdelegation属性，允许对特定的包（即那些内部VM类）使用父加载器委托。
 
 Step 2: 检查是否在Import-Package中声明
