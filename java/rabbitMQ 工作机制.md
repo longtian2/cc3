@@ -253,6 +253,30 @@ BlockingQueueConsumer类的作用就是将队列数组循环完成创建，并�
 
 RabbitTemplate是用于生产者发送消息的模板类，调用该类的send()方法发送消息。比较简单，感兴趣的请查看源码。
 
+**ConnectionFactory**
+
+ConnectionFactory接口存在两个实现，CachingConnectionFactory和SimpleRoutingConnectionFactory。CachingConnectionFactory很好理解，是提供缓存支持的;SimpleRoutingConnectionFactory是从当前线程中获取ConnectionFactory。AbstractRoutingConnectionFactory类提供了配置许多的不同的Connection Factory的映射，并且能够根据运行时的lookupKey(通过绑定线程上下文的方式) 来决定使用哪个具体的ConnectionFactory。
+
+**Channel**
+
+Channel接口主要是定义Queue、定Exchange、绑定Queue与Exchange、发布消息等，该接口的实现有ChannelN、AutorecoveringChannel、PublisherCallbackChannelImpl。AutorecoveringChannel、PublisherCallbackChannelImpl都是通过静态代理的方式，最终都是调用的ChannelN类中的方法。
+
+RabbitMQ消息最终发送出去是通过AMQCommand类的transmit()方法来完成。接下来我们来看一下：
+
+![](https://github.com/longtian2/cc3/blob/master/images/rabbitMQ/rabbitmq-code-command.png)
+
+**AMQConnection**
+
+AMQConnection类实现Connection接口，是每次消息处理的载体。该类的创建由ConnectionFactory的newConnection()发起。
+
+![](https://github.com/longtian2/cc3/blob/master/images/rabbitMQ/rabbitmq-code-factory.png)
+
+![](https://github.com/longtian2/cc3/blob/master/images/rabbitMQ/rabbitmq-code-connection.png)
+
+MainLoop是AMQConnection的私有类，MainLoop类实现了Runnable接口，该类的主要作用是开启一个线程，用于接收或者发送消息。
+
+![](https://github.com/longtian2/cc3/blob/master/images/rabbitMQ/rabbitmq-code-mainloop.png)
+
 参考文献：
 
    https://blog.csdn.net/whycold/article/details/41119807
