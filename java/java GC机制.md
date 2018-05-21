@@ -96,7 +96,7 @@ Serial Old 收集器是Serial 收集器的老年代版本，同样是一个单�
 
 ParNew 收集器其实就是 Serial 收集器的多线程版本。使用多线程和“复制”算法回收垃圾对象。
 
-![](https://github.com/longtian2/cc3/blob/master/images/java-gc-parnnew.png)
+![](https://github.com/longtian2/cc3/blob/master/images/java-gc-parnew.png)
 
 ----------------------------------------------------------------------------------------------------
 
