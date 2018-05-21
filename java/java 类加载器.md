@@ -188,6 +188,7 @@ OSGI 是当前业界“事实上”的 java 模块化标准，而 OSGI 实现模
 ![](https://github.com/longtian2/cc3/blob/master/images/osgi-class-loader-2.png)
 
 Step 1: 检查是否java.*，或者在bootdelegation中定义
+
 当bundle类加载器需要加载一个类时，首先检查包名是否以java.*开头，或者是否在一个特定的配置文件（org.osgi.framework.bootdelegation）中定义。如果是，则bundle类加载器立即委托给父类加载器（通常是Application类加载器）。
 
 这么做有两个原因：
@@ -197,15 +198,19 @@ Step 1: 检查是否java.*，或者在bootdelegation中定义
 一些JVM错误地假设父加载器委托永远会发生，内部VM类就能够通过任何类加载器找到特定的其他内部类。所以OSGi提供了org.osgi.framework.bootdelegation属性，允许对特定的包（即那些内部VM类）使用父加载器委托。
 
 Step 2: 检查是否在Import-Package中声明
+
 检查是否在Import-Package中声明。如果是，则找到导出包的bundle，将类加载请求委托给该bundle的类加载器。如此往复。
 
 Step 3: 检查是否在Require-Bundle中声明
+
 检查是否在Require-Bundle中声明。如果是，则将类加载请求委托给required bundle的类加载器。
 
 Step 4: 检查是否bundle内部类
+
 检查是否是该bundle内部的类，即当前JAR文件中的类。
 
 Step5:  检查fragment
+
 搜索可能附加在当前bundle上的fragment中的内部类。
 
 什么是fragment？
@@ -229,6 +234,7 @@ fragment有什么作用？
 GUI程序通常会通过properties文件定义i18n信息，可以将不同的i18n存到不同的fragment中。运行时用户只需要下载host bundle以及特定的i18n fragment即可，不需要把其他国家的i18n也下载下来。
 
 Step6: 动态类加载
+
 查找Dynamic Import 列表的 Bundle，委托给对应Bundle 的类加载器加载。
 
 参考文献：
