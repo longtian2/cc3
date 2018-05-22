@@ -4,22 +4,21 @@
 
 Spring对Bean的生命周期提供了多种扩展入口，可以划分为以下4类型： 
 
-1、Bean自身的方法：
+**1、Bean自身的方法：**
 
 　　通过配置文件中<bean>的init-method和destroy-method指定Bean类本身的方法，可以扩展自定义的Bean对象的初始化和销毁逻辑。
 
-2、Bean级生命周期接口方法：
+**2、Bean级生命周期接口方法：**
 
 　 通过Bean类实现 BeanNameAware、BeanFactoryAware接口的方法是可以获取到Bean类的BeanName，和创建该Bean的BeanFactory；
 
    通过Bean类实现 InitializingBean、DiposableBean接口的方法，可以扩展自定义的Bean对象的初始化和销毁逻辑。
 
-3、容器级生命周期接口方法：
+**3、容器级生命周期接口方法：**
 
 　　通过Bean类实现 InstantiationAwareBeanPostProcessor 和 BeanPostProcessor 接口的方法，可以在Bean实例化前后、初始化前后扩展自定义逻辑。
 
- 
-4、后处理器接口方法：
+**4、后处理器接口方法：**
 
 　　通过Bean类实现 BeanFactoryPostProcessor接口的方法，可以在Bean在加载完成之后，还没有进入实例化之前，修改Bean的信息。BeanFactoryPostProcessor接口实现包括 AspectJWeavingEnabler, ConfigurationClassPostProcessor, CustomAutowireConfigurer等等，都是非常有用的工厂后处理器。
  
@@ -207,7 +206,10 @@ Spring对Bean的生命周期提供了多种扩展入口，可以划分为以下4
 
 根据日志我们能得出如下结论：
 
-![](https://github.com/longtian2/cc3/blob/master/images/spring/spring-bean-init.png)
+![](https://github.com/longtian2/cc3/blob/master/images/spring/spring-bean-init.jpg)
+
+
+
 
 ## 源码分析 ##
 
@@ -288,7 +290,7 @@ AbstractBeanFactory.doGetBean()方法，该方法很重要，主要职责是：�
 						@Override
 						public Object getObject() throws BeansException {
 							try {
-								return createBean(beanName, mbd, args);
+								return createBean(beanName, mbd, args);//createBean() 方法 1
 							}
 							catch (BeansException ex) {
 								// Explicitly remove instance from singleton cache: It might have been put there
@@ -307,7 +309,7 @@ AbstractBeanFactory.doGetBean()方法，该方法很重要，主要职责是：�
 					Object prototypeInstance = null;
 					try {
 						beforePrototypeCreation(beanName);
-						prototypeInstance = createBean(beanName, mbd, args);
+						prototypeInstance = createBean(beanName, mbd, args);//createBean() 方法 2
 					}
 					finally {
 						afterPrototypeCreation(beanName);
@@ -327,7 +329,7 @@ AbstractBeanFactory.doGetBean()方法，该方法很重要，主要职责是：�
 							public Object getObject() throws BeansException {
 								beforePrototypeCreation(beanName);
 								try {
-									return createBean(beanName, mbd, args);
+									return createBean(beanName, mbd, args);//createBean() 方法 3
 								}
 								finally {
 									afterPrototypeCreation(beanName);
@@ -384,7 +386,7 @@ AbstractAutowireCapableBeanFactory.createBean()方法，该方法是真正的创
 			instanceWrapper = this.factoryBeanInstanceCache.remove(beanName);
 		}
 		if (instanceWrapper == null) {
-			instanceWrapper = createBeanInstance(beanName, mbd, args);
+			instanceWrapper = createBeanInstance(beanName, mbd, args);//createBeanInstance() 方法 1
 		}
 		final Object bean = (instanceWrapper != null ? instanceWrapper.getWrappedInstance() : null);
 		Class<?> beanType = (instanceWrapper != null ? instanceWrapper.getWrappedClass() : null);
@@ -426,7 +428,7 @@ AbstractAutowireCapableBeanFactory.createBean()方法，该方法是真正的创
 		try {
 			populateBean(beanName, mbd, instanceWrapper);
 			if (exposedObject != null) {
-				exposedObject = initializeBean(beanName, exposedObject, mbd);
+				exposedObject = initializeBean(beanName, exposedObject, mbd);//initializeBean() 方法 2
 			}
 		}
 		catch (Throwable ex) {
@@ -500,19 +502,19 @@ AbstractAutowireCapableBeanFactory.initializeBean()方法，从该方法我们�
 
 ![](https://github.com/longtian2/cc3/blob/master/images/spring/spring-code-beanFactory-initializeBean.png)
 
-BeanNameAware、BeanFactoryAware接口的注入
+**1、BeanNameAware、BeanFactoryAware接口的注入**
 
 ![](https://github.com/longtian2/cc3/blob/master/images/spring/spring-code-beanFactory-initializeBean-1.png)
 
-BeanPostProcessor的postProcessBeforeInitialization()方法调用
+**2、BeanPostProcessor的postProcessBeforeInitialization()方法调用**
 
 ![](https://github.com/longtian2/cc3/blob/master/images/spring/spring-code-beanFactory-initializeBean-2.png)
 
-InitializingBean接口的afterPropertiesSet()方法调用，以及自定义的init方法调用
+**3、InitializingBean接口的afterPropertiesSet()方法调用，以及自定义的init方法调用**
 
 ![](https://github.com/longtian2/cc3/blob/master/images/spring/spring-code-beanFactory-initializeBean-3.png)
 
-BeanPostProcessor的postProcessAfterInitialization()方法调用
+**4、BeanPostProcessor的postProcessAfterInitialization()方法调用**
 
 ![](https://github.com/longtian2/cc3/blob/master/images/spring/spring-code-beanFactory-initializeBean-4.png)
 
