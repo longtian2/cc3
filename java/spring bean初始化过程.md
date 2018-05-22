@@ -206,7 +206,7 @@ Spring对Bean的生命周期提供了多种扩展入口，可以划分为以下4
 
 根据日志我们能得出如下结论：
 
-![](https://github.com/longtian2/cc3/blob/master/images/spring/spring-bean-init.jpg)
+![](https://github.com/longtian2/cc3/blob/master/images/spring/spring-bean-init.png)
 
 
 
